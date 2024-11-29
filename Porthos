@@ -1,0 +1,100 @@
+
+#include <SPI.h>
+#include <LoRa.h>
+#incl
+ude <TinyGPS++.h>
+
+// Definição dos pinos dos sensores de qualidade da água
+#define PH_SENSOR_PIN A0          // Sensor de pH conectado ao pino A0
+#define TURBIDITY_SENSOR_PIN A1   // Sensor de Turbidez conectado ao pino A1
+#define CONDUCTIVITY_SENSOR_PIN A2 // Sensor de Condutividade conectado ao pino A2
+
+// Definição dos pinos do módulo LoRa
+#define LORA_SS 10      // Pino SS do módulo LoRa conectado ao pino digital 10
+#define LORA_RST 9      // Pino RST do módulo LoRa conectado ao pino digital 9
+#define LORA_DIO0 2     // Pino DIO0 do módulo LoRa conectado ao pino digital 2
+
+// Definição dos pinos do módulo GPS
+#define GPS_RX 4        // Pino RX do módulo GPS conectado ao pino digital 4
+#define GPS_TX 3        // Pino TX do módulo GPS conectado ao pino digital 3
+
+// Definição do endereço e rede LoRaMesh
+#define LOCAL_ADDRESS 0x01  // Endereço do nó local (cada boia deve ter um endereço único)
+#define DEST_ADDRESS 0xFF   // Endereço do nó de destino (broadcast)
+
+TinyGPSPlus gps;
+
+void setup() {
+  Serial.begin(9600);
+  Serial1.begin(9600, SERIAL_8N1, GPS_RX, GPS_TX);  // Inicializando o GPS
+
+  // Inicializando os sensores de qualidade da água
+  pinMode(PH_SENSOR_PIN, INPUT);
+  pinMode(TURBIDITY_SENSOR_PIN, INPUT);
+  pinMode(CONDUCTIVITY_SENSOR_PIN, INPUT);
+
+  // Inicializando o módulo LoRa
+  Serial.println("Inicializando LoRa...");
+  LoRa.setPins(LORA_SS, LORA_RST, LORA_DIO0);
+
+  if (!LoRa.begin(915E6)) {  // Ajuste a frequência conforme sua região (915MHz, 868MHz, etc.)
+    Serial.println("Falha ao iniciar LoRa! Verifique as conexões.");
+    while (1);
+  }
+  Serial.println("LoRa inicializado com sucesso!");
+
+  // Comentário: Certifique-se de que o sistema esteja alimentado por uma bateria e placa solar adequadas
+  Serial.println("Sistema alimentado por bateria e placa solar.");
+}
+
+void loop() {
+  // Leitura dos valores dos sensores de qualidade da água
+  float phValue = analogRead(PH_SENSOR_PIN) * (5.0 / 1023.0); // Leitura e conversão para tensão
+  float turbidityValue = analogRead(TURBIDITY_SENSOR_PIN) * (5.0 / 1023.0); // Leitura e conversão para tensão
+  float conductivityValue = analogRead(CONDUCTIVITY_SENSOR_PIN) * (5.0 / 1023.0); // Leitura e conversão para tensão
+
+  // Atualizando os dados do GPS
+  while (Serial1.available() > 0) {
+    gps.encode(Serial1.read());
+  }
+
+  // Exibindo os valores no monitor serial
+  Serial.print("pH: ");
+  Serial.print(phValue);
+  Serial.print(" | Turbidez: ");
+  Serial.print(turbidityValue);
+  Serial.print(" | Condutividade: ");
+  Serial.print(conductivityValue);
+
+  if (gps.location.isUpdated()) {
+    Serial.print(" | Latitude: ");
+    Serial.print(gps.location.lat(), 6);
+    Serial.print(" | Longitude: ");
+    Serial.println(gps.location.lng(), 6);
+  } else {
+    Serial.println(" | GPS não disponível");
+  }
+
+  // Enviando os dados via LoRa para outras boias
+  LoRa.beginPacket();
+  LoRa.write(LOCAL_ADDRESS);  // Endereço do nó local
+  LoRa.write(DEST_ADDRESS);   // Endereço do nó de destino (broadcast para outras boias)
+  LoRa.print("pH: ");
+  LoRa.print(phValue);
+  LoRa.print(" | Turbidez: ");
+  LoRa.print(turbidityValue);
+  LoRa.print(" | Condutividade: ");
+  LoRa.print(conductivityValue);
+
+  if (gps.location.isUpdated()) {
+    LoRa.print(" | Latitude: ");
+    LoRa.print(gps.location.lat(), 6);
+    LoRa.print(" | Longitude: ");
+    LoRa.print(gps.location.lng(), 6);
+  } else {
+    LoRa.print(" | GPS não disponível");
+  }
+  LoRa.endPacket();
+
+  delay(5000);  // Envia a cada 5 segundos
+}
