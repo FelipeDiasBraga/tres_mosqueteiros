@@ -1,0 +1,21 @@
+# Requisitos para a API em Python Flask
+Flask==2.3.2
+Flask-SQLAlchemy==3.0.4
+
+# Requisitos para o projeto Arduino
+# 1. Arduino Mega 2560 (ou similar)
+# 2. Módulo LoRa (ex: SX1278/RFM95)
+#    - Pinos: MISO, MOSI, SCK, SS (pino 10), RST (pino 9), DIO0 (pino 2)
+# 3. Módulo GPS (ex: Neo-6M)
+#    - Pinos: RX (pino digital 4), TX (pino digital 3)
+# 4. Sensores de Qualidade da Água:
+#    - Sensor de pH (conectar ao pino analógico A0)
+#    - Sensor de Turbidez (conectar ao pino analógico A1)
+#    - Sensor de Condutividade (conectar ao pino analógico A2)
+# 5. Placa Solar e Bateria para alimentação
+# 6. Antena compatível com a frequência do módulo LoRa (433MHz, 868MHz ou 915MHz)
+
+# Bibliotecas Arduino
+# - LoRa.h
+# - TinyGPSPlus.h
+# - SPI.h
