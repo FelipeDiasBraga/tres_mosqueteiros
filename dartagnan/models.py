@@ -1,5 +1,5 @@
 from configs import db
-
+from datetime import datetime
 
 class SensorData(db.Model):
     id = db.Column(db.Integer, primary_key=True)
